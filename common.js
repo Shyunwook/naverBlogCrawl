@@ -1,8 +1,11 @@
 'use strict'
 
 const axios = require('axios');
+const cheerio = require('cheerio');
 
-const postListURL = `https://blog.naver.com/PostTitleListAsync.nhn?blogId=`;
+const blogURL = `https://blog.naver.com`;
+const postListURL = `${blogURL}/PostTitleListAsync.nhn?blogId=`;
+const postViewURL = `${blogURL}/PostView.nhn?blogId=`;
 
 exports.getTotalCount = (blog_id) => {
     return new Promise(async (resolve, reject) => {
@@ -14,7 +17,7 @@ exports.getTotalCount = (blog_id) => {
     })
 }
 
-exports.getContents = (blog_id, count) => {
+exports.getLogNoList = (blog_id, count) => {
     return new Promise(async (resolve, reject) => {
         let page = Math.ceil(count/10);
         let promise = [];
@@ -24,9 +27,46 @@ exports.getContents = (blog_id, count) => {
                 return JSON.parse(val.data.replace(/'/gi,`"`)).postList;
             }));
         }
+        
         Promise.all(promise).then(function(value){
-            console.log(value)
-            resolve(value);
+            let no_list = [];
+            for(let val of value){
+                for(let no of val){
+                    no_list.push(no.logNo);
+                }
+            }
+
+            resolve(no_list);
         });
+    })
+}
+
+exports.getContents = (blog_id, list) => {
+    return new Promise(async (resolve, reject) => {
+        let blog_id = 'rung913';
+        let promise = [];
+
+        for(let no of list){
+            let url = `${postViewURL}${blog_id}&logNo=${no}`
+            promise.push(parse(url));
+        }
+
+        let contents = Promise.all(promise)
+        
+        resolve(contents);
+    })
+}
+
+function parse(url){
+    return new Promise(async (resolve, reject) => {
+        let content = await axios.get(url);
+        let $ = cheerio.load(content.data);
+
+        let div = $('.se-main-container').find('.se-text');
+        let text_arr = [];
+        div.each((i) => {
+            text_arr.push($(div[i]).text().trim());
+        })
+        resolve(text_arr);
     })
 }
