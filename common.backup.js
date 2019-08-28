@@ -312,31 +312,51 @@ exports.getLogNoList = (blog_id, count) => {
     let countPerPage = 30
     return new Promise(async (resolve, reject) => {
         let page = Math.ceil(count / countPerPage);
+        console.log(page);
+        // let promise = [];
         let post_list = [];
-
         for (let i = 1; i <= page; i++) {
             let url = `${postListURL}${blog_id}&currentPage=${i}&countPerPage=${countPerPage}`;
+            // promise.push(axios({
+            //     method: 'get',
+            //     url: url,
+            //     headers: {
+            //         'Referer': Referers[getRandomInt(Referers.length - 1)],
+            //         'User-Agent': UserAgents[getRandomInt(UserAgents.length - 1)],
+            //         'Content-Type': 'application/x-www-form-urlencoded'
+            //     }
+            // }).then((val) => {
+            //     return JSON.parse(val.data.replace(/'/gi, `"`)).postList;
+            // }));
+            // Promise.all(promise).then(function (value) {
+            //     let post_list = [];
+            //     for (let val of value) {
+            //         for (let data of val) {
+            //             let param = {
+            //                 logNo: data.logNo,
+            //                 title: data.title,
+            //                 date: data.addDate
+            //             }
+
+            //             post_list.push(param);
+            //         }
+            //     }
+
+            //     resolve(post_list);
+            // });
 
             let temp = await (async () => {
                 return new Promise((resolve, reject) => {
                     setTimeout(async function () {
-                        let d;
-                        try {
-                            d = await axios({
-                                method: 'get',
-                                url: url,
-                                headers: {
-                                    'Referer': Referers[getRandomInt(Referers.length - 1)],
-                                    'User-Agent': UserAgents[getRandomInt(UserAgents.length - 1)],
-                                    'Content-Type': 'application/x-www-form-urlencoded'
-                                }
-                            });
-                        } catch (e) {
-                            let error = `\n${blog_id} getLogNoList 에러\n--------------------------------`;
-                            fs.appendFile('error.txt', error, function (err) {
-                                // console.log(err);
-                            })
-                        }
+                        let d = await axios({
+                            method: 'get',
+                            url: url,
+                            headers: {
+                                'Referer': Referers[getRandomInt(Referers.length - 1)],
+                                'User-Agent': UserAgents[getRandomInt(UserAgents.length - 1)],
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        });
                         let value = JSON.parse(d.data.replace(/'/gi, `"`)).postList;
                         let temp_arr = [];
                         for (let val of value) {
@@ -357,25 +377,33 @@ exports.getLogNoList = (blog_id, count) => {
     })
 }
 
-exports.getAndWriteContents = (blog_id, list) => {
+exports.getContents = (blog_id, list) => {
     return new Promise(async (resolve, reject) => {
+        // let promise = [];
+
+        // for (let post of list) {
+        //     let url = `${postViewURL}${blog_id}&logNo=${post.logNo}`
+        //     promise.push(parse(blog_id,url, post));
+        // }
+
+        // let contents = Promise.all(promise)
+
+        // resolve(contents);
+
         for (let post of list) {
             let url = `${postViewURL}${blog_id}&logNo=${post.logNo}`
             let temp = await (() => {
                 return new Promise(async (resolve, reject) => {
                     setTimeout(() => {
                         resolve(parse(blog_id, url, post));
-                    }, 2000);
+                    }, 1000);
                 })
             })(blog_id, url, post);
-            let text =
-                `\n블로그 ID : ${temp.blog_id}\n제목 : ${temp.title}\n날짜 : ${temp.date}\n내용 : ${temp.contents}`
-            fs.appendFileSync('./result/data.txt', text, function (err) {
-                // console.log(err);
-            });
-            fs.appendFileSync('./result/title.txt', `\n${temp.title}`, function(err){});
-            fs.appendFileSync('./result/date.txt',  `\n${temp.date}`, function(err){});
-            fs.appendFileSync('./result/content.txt',  `\n${temp.contents}`, function(err){});
+            let text = 
+            `\n블로그 ID : ${temp.blog_id}\n제목 : ${temp.title}\n날짜 : ${temp.date}\n내용 : ${temp.contents}`
+            fs.appendFile('./data.txt', text, function(err){
+                console.log(err);
+            })
         }
         resolve('OK');
     })
@@ -388,61 +416,30 @@ function getRandomInt(max) {
 
 function parse(blog_id, url, post) {
     return new Promise(async (resolve, reject) => {
-        let content;
-        try {
-            content = await axios({
-                method: 'get',
-                url: url,
-                headers: {
-                    'Referer': Referers[getRandomInt(Referers.length - 1)],
-                    'User-Agent': UserAgents[getRandomInt(UserAgents.length - 1)],
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            });
-        } catch (e) {
-            let error = `\n${blog_id} getLogNoList 에러\n--------------------------------`;
-            fs.appendFile('error.txt', error, function (err) {
-                console.log(err);
-            })
-        }
-
+        let content = await axios({
+            method: 'get',
+            url: url,
+            headers: {
+                'Referer': Referers[getRandomInt(Referers.length - 1)],
+                'User-Agent': UserAgents[getRandomInt(UserAgents.length - 1)],
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
         let $ = cheerio.load(content.data);
 
-        // let div = $('.se-main-container').find('.se-text');
+        let div = $('.se-main-container').find('.se-text');
         let text_arr = [];
-        // div.each((i) => {
-        //     text_arr.push($(div[i]).text().trim());
-        // })
-
-        let textarea = $('p.se_textarea').text().trim().replace(/\n/gi, '');
-        let postview = $('#postViewArea').find('.post-view').find('.view').text().trim().replace(/\n/gi, '');
-        let postview2 = $('#postViewArea').find('.post-view').text().trim().replace(/\n/gi, '');
-        let printPost = $('.original_post_area_se2').find('p').text().trim().replace(/\n/gi, '');
-        let se_section = $('.se-section-text').text().trim().replace(/\n/gi, '');
-        let sect_dsc = $('.sect_dsc').find('.se_paragraph').text().replace(/\n/gi, '');
-
-        if(textarea.length > 0){
-            text_arr.push(textarea);
-        }else if(postview.length > 0){
-            text_arr.push(postview);
-        }else if(postview2.length > 0){
-            text_arr.push(postview2);
-        }else if(printPost.length > 0){
-            text_arr.push(printPost);
-        }else if(se_section.length > 0){
-            text_arr.push(se_section);
-        }else if(sect_dsc.length > 0){
-            text_arr.push(sect_dsc);
-        }
-        
+        div.each((i) => {
+            text_arr.push($(div[i]).text().trim());
+        })
 
         let param = {
             blog_id: blog_id,
-            title: decodeURIComponent(post.title.replace(/\+/gi, ' ')),
+            title: decodeURIComponent(post.title.replace(/\+/gi,' ')),
             date: post.date,
             contents: text_arr
         }
-
+        console.log(param);
         resolve(param);
     })
 }
