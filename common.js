@@ -348,7 +348,7 @@ exports.getLogNoList = (blog_id, count) => {
                             temp_arr.push(param);
                         }
                         resolve(temp_arr);
-                    }, 100);
+                    }, 1000);
                 })
             })(url);
             post_list = post_list.concat(temp);
@@ -365,7 +365,7 @@ exports.getAndWriteContents = (blog_id, list) => {
                 return new Promise(async (resolve, reject) => {
                     setTimeout(() => {
                         resolve(parse(blog_id, url, post));
-                    }, 2000);
+                    }, 3000);
                 })
             })(blog_id, url, post);
             let text =
